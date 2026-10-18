@@ -1,0 +1,13 @@
+.gradle/
+.gradle-user/
+.android-user/
+.android/
+.android-sdk/
+.tools/
+.kotlin/
+analytics.settings
+local.properties
+build/
+app/build/
+*.iml
+.idea/

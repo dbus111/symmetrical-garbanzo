@@ -1,85 +1,35 @@
-# symmetrical-garbanzo
-人工智能
-#番茄钟 Pomodoro APK
+# 番茄园
 
-一个极简的安卓番茄钟应用，纯 Java + Android SDK 构建，**不依赖 Gradle**。
+一个从零实现的本地 Android 番茄钟。界面使用 Kotlin、Jetpack Compose 和 Material 3；记录保存在设备 SQLite 中，不需要账号或网络。
 
 ## 功能
 
--🍅**番茄工作法**：25 分钟专注 + 5 分钟休息
-- ⏱️ **进度可视化**：大字号倒计时 + 进度条
--📊**完成计数**：自动累计完成的番茄数量
--🛌**智能休息**：每完成 4 个番茄，自动进入 15 分钟长休息
--🎮**完整控制**：开始/暂停、重置、跳过
+- 默认专注 25 分钟、短休 5 分钟；每完成 4 次专注，安排 15 分钟长休。三个时长都可以在“设置”中修改。
+- 支持开始、暂停、继续、重置和跳过。重置当前阶段；跳过专注不会得到番茄。
+- 运行中的截止时间持久化。锁屏、后台、进程重启和设备重启后按实际时间恢复；阶段完成时进入下一阶段的待开始状态。
+- 完成专注后保存一条本地记录并获得一颗番茄。统计页显示今天、本周、最近 7 天和最近 4 周的数据。
+- 阶段结束发送通知。Android 13 及以上需要通知权限；Android 12 及以上建议开启精确闹钟权限。未开启精确闹钟时会使用系统非精确闹钟，后台通知可能延迟，重新打开应用仍会正确结算。
 
-## 快速安装
+## 运行和构建
 
-直接把 `build-output/Pomodoro.apk` 拷到安卓手机，打开安装即可（需开启"未知来源"）。
+需要 JDK 17、Android SDK Platform 35、Build Tools 35.0.0。项目包含标准 Gradle Wrapper。使用 Android Studio 打开本目录，等待同步后运行 `app` 即可。最低系统版本为 Android 8.0（API 26）。
 
-## 重新构建
+在 Windows PowerShell 中，运行：
 
-```猛敲
-番茄
-建筑
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-debug.ps1
 ```
 
-输出：`build-output/Pomodoro.apk`
+脚本会临时映射一个英文盘符，以绕开 Windows 用户目录中文路径导致的 Android 构建工具问题；构建后自动移除映射。本机用于构建的 JDK、SDK 和 Gradle 缓存留在项目目录内，但不会提交到仓库。克隆仓库后，安装 JDK 17 和 Android SDK 35，并设置 `JAVA_HOME`、`ANDROID_HOME`。在普通英文路径下也可以直接运行：
 
-## 环境要求
-
--JDK 17/21（不能用 JDK 25，999万）
--Android SDK平台34
--Android SDK Build-Tools 34.0.0
-
-## 项目结构
-
-```
-PomodoroApp/
-├── app/src/main/
--androidmanifemal. xml#应用清单
-│ ├── java/com/ima/pomodoro/
--pomodorovivity.java#主界面+你
-java#CountDownTimer子类
--startpausbly Blick. java#开始/you
--resetbioclick. java#重置按钮
--SkipClick. java#跳过按钮
-│   └── res/
--layout/activity_moodoro.xml#界面布局
--values/{bilos，strings}. xml#颜色与文案
--drawable/mayor_launcher_foreground. xml#图标前景
--mipmap-yodo anydpi-v26/#adaptive图标（Android 8+）
--mipmap-{m，h，xh，xxh，xxxh}dpi/#PNG图标（图标）
--scripts/gen_youse icons. py#生成 PNG你如何
-├── build.sh                       # 一键构建脚本
--build-output/maodoro.apk#构建产物
+```powershell
+.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
 ```
 
-## 为什么不用 Gradle
+APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。连接 Android 设备后可用 `adb install -r app/build/outputs/apk/debug/app-debug.apk` 安装，或者在 Android Studio 中运行 `app`。GitHub [Releases](https://github.com/dbus111/symmetrical-garbanzo/releases) 提供预览安装包；它使用调试签名，供功能体验。
 
-沙盒里 Gradle 8.7 下载困难，AGP 版本兼容复杂。这套脚本直接用：
+## 实现说明
 
-- **aapt2** — 编译/链接资源
-- **java编译器** — 编译 Java 源码
-- **d8**— class → dex
-- **aapt add** — 合并 dex 进 APK
-- **zip对齐** — APK 字节对齐
-- **jarsigner + apksigner**-双签名（v1+v2+v3）
+计时器保存当前阶段、剩余时长和墙上时钟及开机后单调时钟的截止时间。同一次开机优先使用单调时钟，避免手动改系统时间影响倒计时；重启后用墙上时钟恢复。系统闹钟负责在后台唤醒结算，应用每次打开也会核对截止时间。专注记录以唯一会话 ID 入库，避免重复发放番茄。
 
-最终 APK 仍然符合 Android 11+ 的签名要求（v2/v3 必需）。
-
-## 已知坑（备忘）
-
-1. **d8在 Java 21 javac yournpe bug** — 任何匿名内部类（`新XXX（）{……`）都会让 d8 抛 `NullPointerException：不能调用“String.length（）”，因为“<parameter1>”为Null`。**解决方法：所有监听器、Timer 子类都拆成独立命名类**。
-2. **lambda也不行**-Android bootclasspath不含`LambdaMetafactory.metafactory`，javac 编译会报"找不到符号"。改回传统接口实现。
-3. **apksigner 在沙盒文件系统上读 APK 偶尔 I/O 失败** — 先用 `jarsigner` 做 v1 签名，再让 `apk 签名工具`追加 v2/v3
-4. **aapt2编译输出是** — 不是真正的 `.flat` 文件，需要 unzip 一次才能给 `aapt2链接` 用。
-
-## 修改时间参数
-
-打开 `app/src/main/java/com/ima/pomodoro/PomodoroActivity.java`，改这三个常量：
-
-```java
-private static final long WORK_SECONDS=25*60；//工作 25
-私有静态最终长短_BREAK_SECONDS=5*60；//短休息 5
-私有静态final LONG LONG_BREAK_SECONDS=15*60；//长休息 15
-```
+本地单元测试覆盖专注结算、四次专注后的长休、暂停继续、重启恢复、跳过、自定义时长和系统时间变化。测试命令为 `:app:testDebugUnitTest`。
